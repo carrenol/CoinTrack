@@ -14,7 +14,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 flex items-center justify-center">
       <div className="bg-white/10 backdrop-blur-xl p-12 rounded-3xl shadow-2xl text-center max-w-md w-full border border-white/20">
         <div className="mb-8">
-          <h1 className="text-6xl font-bold text-white tracking-tight">MonaBit</h1>
+          <h1 className="text-6xl font-bold text-white tracking-tight">CoinTrack</h1>
           <p className="text-2xl text-white/70 mt-2">Crypto Dashboard</p>
         </div>
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-white/50 text-sm mt-8">
-          Solo para usuarios autorizados
+          A demo project for Monabit
         </p>
       </div>
     </div>

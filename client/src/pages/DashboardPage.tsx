@@ -71,7 +71,7 @@ export default function DashboardPage({ session }: DashboardPageProps) {
       {/* Sidebar */}
       <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col">
         <div className="p-6 border-b border-gray-800">
-          <h1 className="text-3xl font-bold text-emerald-400">MonaBit</h1>
+          <h1 className="text-3xl font-bold text-emerald-400">CoinTrack</h1>
           <p className="text-sm text-gray-500">Crypto Dashboard</p>
         </div>
 

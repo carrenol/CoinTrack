@@ -33,7 +33,7 @@ console.log('✅ Supabase client initialized');
 // Rutas
 app.get('/', (req, res) => {
   res.json({
-    message: 'MonaBit Crypto API is running!',
+    message: 'CoinTrack API is running!',
     status: 'ok'
   });
 });
