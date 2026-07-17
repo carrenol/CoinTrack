@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
-
+import coinRoutes from './routes/coins.routes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -61,6 +61,7 @@ app.get('/health', async (req, res) => {
 
 // Usar rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/coins', coinRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
