@@ -1,10 +1,10 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { createClient } from '@supabase/supabase-js';
+import authRoutes from './routes/auth';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,21 +12,55 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: 'http://localhost:5173',
   credentials: true
 }));
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Ruta básica
+// === CONEXIÓN CON SUPABASE ===
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Faltan variables de entorno de Supabase');
+}
+
+const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+console.log('✅ Supabase client initialized');
+
+// Rutas
 app.get('/', (req, res) => {
-  res.json({ message: 'MonaBit Crypto API is running!' });
+  res.json({
+    message: 'MonaBit Crypto API is running!',
+    status: 'ok'
+  });
 });
 
-// Ruta de health check
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get('/health', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count', { count: 'exact', head: true });
+
+    res.json({
+      status: 'ok',
+      supabase: error ? 'error' : 'connected',
+      profiles_count: data?.[0]?.count || 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({
+      status: 'ok',
+      supabase: 'connection_error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
+
+// Usar rutas
+app.use('/api/auth', authRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
