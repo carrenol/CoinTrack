@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
 import coinRoutes from './routes/coins.routes';
 import adminRoutes from './routes/admin';
+import favoritesRoutes from './routes/favorites.routes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -65,6 +66,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/coins', coinRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
