@@ -25,18 +25,28 @@ export default function DashboardPage({ session }: DashboardPageProps) {
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [activeTab, setActiveTab] = useState<'top' | 'admin'>('top')
 
-  // Cargar perfil
+  // Cargar perfil y verificar estado activo
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         if (!session?.access_token) {
-          console.warn("No access token available");
           setLoadingProfile(false);
           return;
         }
         const res = await fetch('http://localhost:3001/api/auth/me', {
           headers: { Authorization: `Bearer ${session.access_token}` }
         })
+
+        // Cuenta desactivada: cerrar sesión automáticamente
+        if (res.status === 403) {
+          const data = await res.json()
+          if (data.code === 'ACCOUNT_DISABLED') {
+            alert('Tu cuenta ha sido desactivada por un administrador. Serás redirigido al login.')
+            await supabase.auth.signOut()
+            return
+          }
+        }
+
         if (res.ok) {
           const data = await res.json()
           setUserProfile(data.profile)

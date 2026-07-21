@@ -6,6 +6,12 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
+// Cliente admin para leer profiles sin restricciones de RLS
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+);
+
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -16,7 +22,6 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     }
 
     const token = authHeader.split(' ')[1];
-    console.log('🔑 Token recibido (primeros 30 chars):', token?.substring(0, 30) + '...');
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
@@ -33,6 +38,21 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
       return res.status(401).json({ error: 'No user found' });
     }
 
+    // Verificar si el usuario está activo en la tabla profiles
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('active')
+      .eq('id', user.id)
+      .single();
+
+    if (profile && profile.active === false) {
+      console.log('🚫 Usuario desactivado intentó acceder:', user.email || user.id);
+      return res.status(403).json({ 
+        error: 'Cuenta desactivada',
+        code: 'ACCOUNT_DISABLED'
+      });
+    }
+
     console.log('✅ Usuario autenticado:', user.email || user.id);
     req.user = user;
     next();
@@ -43,4 +63,4 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
       message: error.message 
     });
   }
-};
+};
