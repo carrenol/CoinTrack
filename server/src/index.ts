@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
 import coinRoutes from './routes/coins.routes';
+import adminRoutes from './routes/admin';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -43,6 +44,7 @@ app.get('/health', async (req, res) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('count', { count: 'exact', head: true });
+    console.error('Error Supabase:', error);
 
     res.json({
       status: 'ok',
@@ -62,6 +64,7 @@ app.get('/health', async (req, res) => {
 // Usar rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/coins', coinRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

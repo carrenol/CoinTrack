@@ -11,20 +11,26 @@ const supabase = createClient(
 // Obtener perfil del usuario actual
 router.get('/me', authenticateUser, async (req, res) => {
   try {
+    console.log('👤 Buscando perfil para user ID:', req.user?.id);
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', req.user?.id)
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('❌ Error al buscar perfil:', error);
+      return res.status(500).json({ error: error.message });
+    }
 
     res.json({
       user: req.user,
-      profile: profile || null
+      profile: profile || null   // ← Permite perfil null
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('💥 Error en /me:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
