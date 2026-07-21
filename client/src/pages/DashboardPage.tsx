@@ -13,11 +13,54 @@ interface Coin {
   market_cap_rank: number;
   price_change_percentage_24h: number;
   market_cap: number;
+  total_volume: number;
+  sparkline_in_7d?: {
+    price: number[];
+  };
 }
 
 interface DashboardPageProps {
   session: Session
 }
+
+// Componente SVG para la gráfica Sparkline (Tendencia 7d)
+const Sparkline = ({ prices, isPositive }: { prices?: number[]; isPositive: boolean }) => {
+  if (!prices || prices.length === 0) return <span className="text-xs text-gray-400">N/A</span>;
+
+  const width = 110;
+  const height = 32;
+
+  // Muestrear puntos para suavizar y optimizar el renderizado SVG
+  const step = Math.max(1, Math.floor(prices.length / 25));
+  const sampled = prices.filter((_, idx) => idx % step === 0);
+
+  const min = Math.min(...sampled);
+  const max = Math.max(...sampled);
+  const range = max - min || 1;
+
+  const points = sampled
+    .map((val, idx) => {
+      const x = (idx / (sampled.length - 1)) * width;
+      const y = height - ((val - min) / range) * (height - 6) - 3;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+
+  const strokeColor = isPositive ? '#10b981' : '#ef4444';
+
+  return (
+    <svg width={width} height={height} className="overflow-visible inline-block">
+      <polyline
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+};
 
 export default function DashboardPage({ session }: DashboardPageProps) {
   const { theme, toggleTheme } = useTheme();
@@ -28,6 +71,7 @@ export default function DashboardPage({ session }: DashboardPageProps) {
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [togglingFav, setTogglingFav] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'top' | 'favorites' | 'admin'>('top')
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
   // Cargar perfil y verificar estado activo
   useEffect(() => {
@@ -41,7 +85,6 @@ export default function DashboardPage({ session }: DashboardPageProps) {
           headers: { Authorization: `Bearer ${session.access_token}` }
         })
 
-        // Cuenta desactivada: cerrar sesión automáticamente
         if (res.status === 403) {
           const data = await res.json()
           if (data.code === 'ACCOUNT_DISABLED') {
@@ -65,20 +108,24 @@ export default function DashboardPage({ session }: DashboardPageProps) {
   }, [session])
 
   // Cargar Top 10 de CoinGecko
-  useEffect(() => {
-    const fetchTopCoins = async () => {
-      try {
-        const res = await fetch('http://localhost:3001/api/coins/top')
-        if (res.ok) {
-          const { data } = await res.json()
-          setCoins(data)
-        }
-      } catch (error) {
-        console.error('Error fetching coins:', error)
-      } finally {
-        setLoadingCoins(false)
+  const fetchTopCoins = async () => {
+    setLoadingCoins(true);
+    try {
+      const res = await fetch('http://localhost:3001/api/coins/top')
+      if (res.ok) {
+        const { data, timestamp } = await res.json()
+        setCoins(data)
+        const dateObj = timestamp ? new Date(timestamp) : new Date();
+        setLastUpdated(dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' (' + dateObj.toLocaleDateString('es-ES') + ')');
       }
+    } catch (error) {
+      console.error('Error fetching coins:', error)
+    } finally {
+      setLoadingCoins(false)
     }
+  }
+
+  useEffect(() => {
     fetchTopCoins()
   }, [])
 
@@ -132,6 +179,12 @@ export default function DashboardPage({ session }: DashboardPageProps) {
   const isAdmin = userProfile?.role === 'admin'
   const handleLogout = async () => await supabase.auth.signOut()
 
+  // --- CÁLCULO DE KPIS ---
+  const totalMarketCap = coins.reduce((acc, c) => acc + (c.market_cap || 0), 0)
+  const totalVolume24h = coins.reduce((acc, c) => acc + (c.total_volume || 0), 0)
+  const topGainer = coins.length > 0 ? [...coins].sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0))[0] : null
+  const greenCoinsCount = coins.filter(c => (c.price_change_percentage_24h || 0) >= 0).length
+
   const CoinTable = ({ data }: { data: Coin[] }) => (
     data.length === 0 ? (
       <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 border border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 shadow-sm dark:shadow-none">
@@ -142,22 +195,25 @@ export default function DashboardPage({ session }: DashboardPageProps) {
     ) : (
       <div className="bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-200">
         <table className="w-full">
-          <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm">
             <tr>
-              <th className="text-left p-6 w-8"></th>
-              <th className="text-left p-6">#</th>
-              <th className="text-left p-6">Moneda</th>
-              <th className="text-right p-6">Precio</th>
-              <th className="text-right p-6">24h</th>
-              <th className="text-right p-6">Market Cap</th>
+              <th className="text-left p-5 w-8"></th>
+              <th className="text-left p-5">#</th>
+              <th className="text-left p-5">Moneda</th>
+              <th className="text-right p-5">Precio</th>
+              <th className="text-right p-5">24h %</th>
+              <th className="text-right p-5">Volumen (24h)</th>
+              <th className="text-right p-5">Market Cap</th>
+              <th className="text-center p-5">Tendencia (7d)</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-800 text-sm">
             {data.map((coin) => {
               const isFav = favorites.has(coin.id)
+              const isPositive = (coin.price_change_percentage_24h || 0) >= 0
               return (
                 <tr key={coin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group">
-                  <td className="p-6">
+                  <td className="p-5">
                     <button
                       onClick={() => toggleFavorite(coin.id)}
                       disabled={togglingFav === coin.id}
@@ -167,22 +223,28 @@ export default function DashboardPage({ session }: DashboardPageProps) {
                       {isFav ? '★' : '☆'}
                     </button>
                   </td>
-                  <td className="p-6 font-medium text-gray-900 dark:text-white">{coin.market_cap_rank}</td>
-                  <td className="p-6 flex items-center gap-3">
+                  <td className="p-5 font-medium text-gray-900 dark:text-white">{coin.market_cap_rank}</td>
+                  <td className="p-5 flex items-center gap-3">
                     <img src={coin.image} alt={coin.name} className="w-8 h-8" />
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">{coin.name}</p>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">{coin.symbol}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">{coin.symbol}</p>
                     </div>
                   </td>
-                  <td className="p-6 text-right font-mono text-gray-900 dark:text-white">
+                  <td className="p-5 text-right font-mono font-medium text-gray-900 dark:text-white">
                     ${coin.current_price.toLocaleString()}
                   </td>
-                  <td className={`p-6 text-right font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {coin.price_change_percentage_24h?.toFixed(2)}%
+                  <td className={`p-5 text-right font-semibold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {isPositive ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
                   </td>
-                  <td className="p-6 text-right font-mono text-gray-500 dark:text-gray-400">
+                  <td className="p-5 text-right font-mono text-gray-600 dark:text-gray-300">
+                    ${(coin.total_volume / 1e9).toFixed(2)}B
+                  </td>
+                  <td className="p-5 text-right font-mono text-gray-500 dark:text-gray-400">
                     ${(coin.market_cap / 1e9).toFixed(2)}B
+                  </td>
+                  <td className="p-5 text-center">
+                    <Sparkline prices={coin.sparkline_in_7d?.price} isPositive={isPositive} />
                   </td>
                 </tr>
               )
@@ -256,7 +318,7 @@ export default function DashboardPage({ session }: DashboardPageProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 transition-colors duration-200">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
             {activeTab === 'top' && 'Top 10 Criptomonedas'}
@@ -275,7 +337,63 @@ export default function DashboardPage({ session }: DashboardPageProps) {
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+          {/* Fila superior: KPIs y Hora de Actualización (solo en pestañas de criptos) */}
+          {activeTab !== 'admin' && (
+            <>
+              {/* Barra de estado y actualización */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-900 p-4 px-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Última actualización: <strong>{lastUpdated || 'Cargando...'}</strong></span>
+                </div>
+                <button
+                  onClick={fetchTopCoins}
+                  disabled={loadingCoins}
+                  className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition text-sm font-medium disabled:opacity-50"
+                >
+                  🔄 {loadingCoins ? 'Actualizando...' : 'Actualizar ahora'}
+                </button>
+              </div>
+
+              {/* Tarjetas de KPIs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cap. Mercado Top 10</p>
+                  <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">${(totalMarketCap / 1e9).toFixed(2)} B</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Suma acumulada Top 10</p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Volumen 24h Total</p>
+                  <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">${(totalVolume24h / 1e9).toFixed(2)} B</p>
+                  <p className="text-xs text-blue-500 mt-1">Operado en 24h</p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mayor Alza 24h</p>
+                  {topGainer ? (
+                    <div>
+                      <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white flex items-center justify-between">
+                        <span>{topGainer.symbol.toUpperCase()}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 text-lg font-semibold">+{topGainer.price_change_percentage_24h.toFixed(2)}%</span>
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{topGainer.name}</p>
+                    </div>
+                  ) : (
+                    <p className="text-lg mt-2 text-gray-400">---</p>
+                  )}
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tendencia del Mercado</p>
+                  <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white">{greenCoinsCount} de {coins.length}</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Criptomonedas en verde (24h)</p>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Sección: Admin Panel */}
           {activeTab === 'admin' && isAdmin && (
             <AdminPanel session={session} />
