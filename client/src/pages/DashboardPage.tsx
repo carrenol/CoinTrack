@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 import AdminPanel from '../components/AdminPanel';
+import { useTheme } from '../context/ThemeContext';
 
 interface Coin {
   id: string;
@@ -19,6 +20,7 @@ interface DashboardPageProps {
 }
 
 export default function DashboardPage({ session }: DashboardPageProps) {
+  const { theme, toggleTheme } = useTheme();
   const [userProfile, setUserProfile] = useState<any>(null)
   const [coins, setCoins] = useState<Coin[]>([])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
@@ -132,15 +134,15 @@ export default function DashboardPage({ session }: DashboardPageProps) {
 
   const CoinTable = ({ data }: { data: Coin[] }) => (
     data.length === 0 ? (
-      <div className="bg-gray-900 rounded-3xl p-10 border border-gray-800 text-center text-gray-500">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 border border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 shadow-sm dark:shadow-none">
         <p className="text-4xl mb-3">⭐</p>
-        <p className="text-lg">No tienes favoritos aún.</p>
-        <p className="text-sm mt-1">Haz clic en la estrella de cualquier cripto para agregarla.</p>
+        <p className="text-lg font-medium">No tienes favoritos aún.</p>
+        <p className="text-sm mt-1 text-gray-400 dark:text-gray-500">Haz clic en la estrella de cualquier cripto para agregarla.</p>
       </div>
     ) : (
-      <div className="bg-gray-900 rounded-3xl overflow-hidden border border-gray-800">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-200">
         <table className="w-full">
-          <thead className="bg-gray-800">
+          <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
             <tr>
               <th className="text-left p-6 w-8"></th>
               <th className="text-left p-6">#</th>
@@ -150,36 +152,36 @@ export default function DashboardPage({ session }: DashboardPageProps) {
               <th className="text-right p-6">Market Cap</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {data.map((coin) => {
               const isFav = favorites.has(coin.id)
               return (
-                <tr key={coin.id} className="hover:bg-gray-800/50 transition group">
+                <tr key={coin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group">
                   <td className="p-6">
                     <button
                       onClick={() => toggleFavorite(coin.id)}
                       disabled={togglingFav === coin.id}
-                      className={`text-xl transition-transform hover:scale-125 ${isFav ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'} ${togglingFav === coin.id ? 'opacity-50' : ''}`}
+                      className={`text-xl transition-transform hover:scale-125 ${isFav ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600 hover:text-yellow-400 dark:hover:text-yellow-400'} ${togglingFav === coin.id ? 'opacity-50' : ''}`}
                       title={isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                     >
                       {isFav ? '★' : '☆'}
                     </button>
                   </td>
-                  <td className="p-6 font-medium">{coin.market_cap_rank}</td>
+                  <td className="p-6 font-medium text-gray-900 dark:text-white">{coin.market_cap_rank}</td>
                   <td className="p-6 flex items-center gap-3">
                     <img src={coin.image} alt={coin.name} className="w-8 h-8" />
                     <div>
-                      <p className="font-semibold">{coin.name}</p>
-                      <p className="text-gray-500 text-sm uppercase">{coin.symbol}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{coin.name}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">{coin.symbol}</p>
                     </div>
                   </td>
-                  <td className="p-6 text-right font-mono">
+                  <td className="p-6 text-right font-mono text-gray-900 dark:text-white">
                     ${coin.current_price.toLocaleString()}
                   </td>
-                  <td className={`p-6 text-right font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className={`p-6 text-right font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {coin.price_change_percentage_24h?.toFixed(2)}%
                   </td>
-                  <td className="p-6 text-right font-mono text-gray-400">
+                  <td className="p-6 text-right font-mono text-gray-500 dark:text-gray-400">
                     ${(coin.market_cap / 1e9).toFixed(2)}B
                   </td>
                 </tr>
@@ -192,12 +194,12 @@ export default function DashboardPage({ session }: DashboardPageProps) {
   )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-200">
       {/* Sidebar */}
-      <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col">
-        <div className="p-6 border-b border-gray-800">
-          <h1 className="text-3xl font-bold text-emerald-400">CoinTrack</h1>
-          <p className="text-sm text-gray-500">Crypto Dashboard</p>
+      <div className="w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors duration-200">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+          <h1 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">CoinTrack</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Crypto Dashboard</p>
         </div>
 
         <nav className="flex-1 p-4">
@@ -206,8 +208,8 @@ export default function DashboardPage({ session }: DashboardPageProps) {
               onClick={() => setActiveTab('top')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                 activeTab === 'top'
-                  ? 'bg-gray-800 text-white font-medium'
-                  : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium shadow-sm dark:shadow-none'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               📊 Top Criptos
@@ -216,13 +218,13 @@ export default function DashboardPage({ session }: DashboardPageProps) {
               onClick={() => setActiveTab('favorites')}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition ${
                 activeTab === 'favorites'
-                  ? 'bg-gray-800 text-yellow-400 font-medium'
-                  : 'text-gray-400 hover:bg-gray-800/60 hover:text-yellow-400'
+                  ? 'bg-yellow-50 dark:bg-gray-800 text-yellow-600 dark:text-yellow-400 font-medium shadow-sm dark:shadow-none'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-yellow-600 dark:hover:text-yellow-400'
               }`}
             >
               <span>⭐ Mis Favoritos</span>
               {favorites.size > 0 && (
-                <span className="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-full">
                   {favorites.size}
                 </span>
               )}
@@ -232,8 +234,8 @@ export default function DashboardPage({ session }: DashboardPageProps) {
                 onClick={() => setActiveTab('admin')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                   activeTab === 'admin'
-                    ? 'bg-gray-800 text-emerald-400 font-medium'
-                    : 'text-gray-400 hover:bg-gray-800/60 hover:text-emerald-400'
+                    ? 'bg-emerald-50 dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 font-medium shadow-sm dark:shadow-none'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-emerald-600 dark:hover:text-emerald-400'
                 }`}
               >
                 👑 Admin Panel
@@ -242,12 +244,12 @@ export default function DashboardPage({ session }: DashboardPageProps) {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-2xl">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-2xl">
             {userProfile?.avatar_url && <img src={userProfile.avatar_url} className="w-10 h-10 rounded-full" />}
             <div>
-              <p className="font-medium">{userProfile?.full_name}</p>
-              <p className="text-xs text-emerald-400">{isAdmin ? 'Administrador' : 'Usuario'}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{userProfile?.full_name}</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">{isAdmin ? 'Administrador' : 'Usuario'}</p>
             </div>
           </div>
         </div>
@@ -255,13 +257,22 @@ export default function DashboardPage({ session }: DashboardPageProps) {
 
       {/* Main Content */}
       <div className="flex-1">
-        <header className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-8">
-          <h2 className="text-2xl font-semibold">
+        <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 transition-colors duration-200">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
             {activeTab === 'top' && 'Top 10 Criptomonedas'}
             {activeTab === 'favorites' && 'Mis Favoritos'}
             {activeTab === 'admin' && '👑 Panel de Administración'}
           </h2>
-          <button onClick={handleLogout} className="px-5 py-2 bg-red-600 hover:bg-red-700 rounded-xl transition">Cerrar Sesión</button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl transition font-medium text-sm border border-gray-200 dark:border-gray-700 shadow-sm"
+              title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              {theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Oscuro'}
+            </button>
+            <button onClick={handleLogout} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition font-medium">Cerrar Sesión</button>
+          </div>
         </header>
 
         <main className="p-8">
@@ -273,7 +284,7 @@ export default function DashboardPage({ session }: DashboardPageProps) {
           {/* Sección: Mis Favoritos */}
           {activeTab === 'favorites' && (
             loadingCoins ? (
-              <p className="text-gray-400">Cargando...</p>
+              <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
             ) : (
               <CoinTable data={favoriteCoins} />
             )
@@ -282,7 +293,7 @@ export default function DashboardPage({ session }: DashboardPageProps) {
           {/* Sección: Top 10 Criptomonedas */}
           {activeTab === 'top' && (
             loadingCoins ? (
-              <p className="text-gray-400">Cargando criptomonedas...</p>
+              <p className="text-gray-500 dark:text-gray-400">Cargando criptomonedas...</p>
             ) : (
               <CoinTable data={coins} />
             )
