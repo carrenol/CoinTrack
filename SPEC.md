@@ -156,22 +156,7 @@ Se permite el uso de IA durante el desarrollo. Debe documentarse (ver `AI_LOG.md
 
 ---
 
-## 12. Entregables finales del candidato
-
-- [ ] Repositorio con el código fuente
-- [ ] Aplicación desplegada y funcional
-- [ ] README con instrucciones de instalación local
-- [ ] README con explicación general de la arquitectura
-- [ ] Documentación de variables de entorno requeridas
-- [ ] Explicación del proveedor cripto elegido
-- [ ] Explicación breve del modelo de datos
-- [ ] Explicación breve de autenticación y seguridad
-- [ ] Resumen del uso de herramientas de IA
-- [ ] Lista de limitaciones conocidas o mejoras futuras
-
----
-
-## 13. Extras opcionales (no obligatorios)
+## 12. Extras opcionales (no obligatorios)
 
 Priorizar solo después de tener una solución funcional, clara y bien documentada:
 
@@ -190,7 +175,7 @@ Priorizar solo después de tener una solución funcional, clara y bien documenta
 
 ---
 
-## 14. Reglas para asistencia de IA en este repositorio
+## 13. Reglas para asistencia de IA en este repositorio
 
 Estas reglas aplican a cualquier IDE o asistente de IA (incluyendo Antigravity) que trabaje sobre este código:
 
